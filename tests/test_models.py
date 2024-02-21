@@ -27,7 +27,7 @@ import os
 import logging
 import unittest
 from decimal import Decimal
-from service.models import Product, Category, db
+from service.models import Product, Category, db, DataValidationError
 from service import app
 from tests.factories import ProductFactory
 
@@ -159,7 +159,7 @@ class TestProductModel(unittest.TestCase):
         """It should Find Products by Name"""
         product_names = []
         products = ProductFactory.create_batch(5)
-        for product in products:            
+        for product in products:
             product_names.append(product.name)
             product.create()
         product_unique_names = set(product_names)
@@ -174,7 +174,7 @@ class TestProductModel(unittest.TestCase):
         """It should Find Products by Availability"""
         available_count = 0
         products = ProductFactory.create_batch(10)
-        for product in products:            
+        for product in products:
             if product.available:
                 available_count += 1
             product.create()
@@ -186,9 +186,9 @@ class TestProductModel(unittest.TestCase):
 
     def test_find_by_category(self):
         """It should Find Products by Category"""
-        category_list = [] 
+        category_list = []
         products = ProductFactory.create_batch(10)
-        for product in products:            
+        for product in products:
             category_list.append(product.category)
             product.create()
         unique_categories = set(category_list)
@@ -198,3 +198,119 @@ class TestProductModel(unittest.TestCase):
             self.assertEqual(products.count(), prod_cat_count)
             for product in products:
                 self.assertEqual(product.category, a_category)
+
+    def test_update_invalid(self):
+        """Cannot Update non existing Product"""
+        product = ProductFactory()
+        app.logger.debug(f"Product prepared for *invalid* Update test: {product}. "
+                         f"Product is prepared, but will not be created.")
+        product.id = None
+        product.description = "My changed product description"
+        app.logger.debug(f"Product description was changed to: {product.description}")
+        # self.assertRaises(DataValidationError, product.update())
+        with self.assertRaises(DataValidationError) as err:
+            product.update()
+        # self.assertTrue("Update called with empty ID field" in err.exception)
+
+    def test_serialize(self):
+        """It should serialize product"""
+        product = ProductFactory()
+        product_dict = product.serialize()
+        self.assertIsInstance(product_dict, dict)
+        self.assertEqual(product_dict["id"], product.id)
+        self.assertEqual(product_dict["name"], product.name)
+        self.assertEqual(product_dict["description"], product.description)
+        self.assertEqual(product_dict["price"], str(product.price))
+        self.assertEqual(product_dict["available"], product.available)
+        self.assertEqual(product_dict["category"], product.category.name)
+
+    def test_find_by_price(self):
+        """It should Find Products by Price"""
+        price_list = []
+        products = ProductFactory.create_batch(10)
+        for product in products:
+            price_list.append(product.price)
+            product.create()
+        unique_prices = set(price_list)
+        for a_price in unique_prices:
+            prod_price_count = price_list.count(a_price)
+            products = Product.find_by_price(a_price)
+            self.assertEqual(products.count(), prod_price_count)
+            for product in products:
+                self.assertEqual(product.price, a_price)
+
+    def test_find_by_price_string(self):
+        """It should Find Products by Price when Price is string"""
+        product = ProductFactory()
+        price_string = str(product.price)
+        product.create()
+        self.assertIsInstance(price_string, str)
+        products = Product.find_by_price(price_string)
+        self.assertEqual(products.count(), 1)
+        self.assertEqual(products[0].price, product.price)
+
+    def test_deserialize(self):
+        """It should Deserialize dictionary to Product"""
+        product_dict = {
+            "name": "SomeName",
+            "description": " Bla bla bla",
+            "price": 1234567.89,
+            "available": True,
+            "category": "UNKNOWN"
+        }
+        product = ProductFactory()
+        product.deserialize(product_dict)
+        self.assertEqual(product.name, product_dict["name"])
+        self.assertEqual(product.description, product_dict["description"])
+        self.assertEqual(product.price, product_dict["price"])
+        self.assertEqual(product.available, product_dict["available"])
+        self.assertEqual(product.category, getattr(Category, product_dict["category"]))
+
+    def test_deserialization_fails_on_available(self):
+        """Deserialization should fail when Available provided non-boolean"""
+        product_dict = {
+            "name": "SomeName",
+            "description": " Bla bla bla",
+            "price": 1234567.89,
+            "available": "True",
+            "category": "UNKNOWN"
+        }
+        product = ProductFactory()
+        with self.assertRaises(DataValidationError) as err:
+            product.deserialize(product_dict)
+        # self.assertTrue("Invalid type for boolean [available]: " in err.exception)
+
+    def test_deserialization_fails_on_category(self):
+        """Deserialization should fail when Category provided non-enum"""
+        product_dict = {
+            "name": "SomeName",
+            "description": " Bla bla bla",
+            "price": 1234567.89,
+            "available": True,
+            "category": "MUHAHA"
+        }
+        product = ProductFactory()
+        with self.assertRaises(DataValidationError) as err:
+            product.deserialize(product_dict)
+        # self.assertTrue("Invalid attribute: " in err.exception)
+
+    def test_deserialization_fails_on_dict_incomplete(self):
+        """Deserialization should fail when deserialized Dictionary mising data"""
+        product_dict = {
+            "name": "SomeName",
+            "description": " Bla bla bla",
+            "price": 1234567.89,
+            "available": True
+        }
+        product = ProductFactory()
+        with self.assertRaises(DataValidationError) as err:
+            product.deserialize(product_dict)
+        # self.assertTrue("Invalid product: missing " in err.exception)
+
+    def test_deserialization_fails_on_non_dictionary(self):
+        """Deserialization should fail when input is not a dictionary"""
+        product_dict = "SomeName"
+        product = ProductFactory()
+        with self.assertRaises(DataValidationError) as err:
+            product.deserialize(product_dict)
+        # self.assertTrue("Invalid product: body of request contained bad or no data " in err.exception)
