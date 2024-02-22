@@ -23,6 +23,7 @@ Test cases can be run with the following:
 
   While debugging just these tests it's convenient to use this:
     nosetests --stop tests/test_service.py:TestProductService
+    nosetests --stop tests/test_routes.py:TestProductRoutes
 """
 import os
 import logging
@@ -135,14 +136,14 @@ class TestProductRoutes(TestCase):
         #
 
         # # Check that the location header was correct
-        # response = self.client.get(location)
-        # self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # new_product = response.get_json()
-        # self.assertEqual(new_product["name"], test_product.name)
-        # self.assertEqual(new_product["description"], test_product.description)
-        # self.assertEqual(Decimal(new_product["price"]), test_product.price)
-        # self.assertEqual(new_product["available"], test_product.available)
-        # self.assertEqual(new_product["category"], test_product.category.name)
+        response = self.client.get(location)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        new_product = response.get_json()
+        self.assertEqual(new_product["name"], test_product.name)
+        self.assertEqual(new_product["description"], test_product.description)
+        self.assertEqual(Decimal(new_product["price"]), test_product.price)
+        self.assertEqual(new_product["available"], test_product.available)
+        self.assertEqual(new_product["category"], test_product.category.name)
 
     def test_create_product_with_no_name(self):
         """It should not Create a Product without a name"""
@@ -166,6 +167,81 @@ class TestProductRoutes(TestCase):
     #
     # ADD YOUR TEST CASES HERE
     #
+    def test_get_product(self):
+        """It should Get a single Product"""
+        test_product = self._create_products(1)[0]
+        response = self.client.get(f"{BASE_URL}/{str(test_product.id)}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        read_data = response.get_json()
+        self.assertEqual(read_data["id"], test_product.id)
+        self.assertEqual(read_data["name"], test_product.name)
+        self.assertEqual(read_data["description"], test_product.description)
+        self.assertEqual(Decimal(read_data["price"]), test_product.price)
+        self.assertEqual(read_data["available"], test_product.available)
+        self.assertEqual(read_data["category"], test_product.category.name)
+
+    def test_get_product_not_found(self):
+        """Request for non-exiting product returns 404"""
+        response = self.client.get(f"{BASE_URL}/0")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    
+    def test_update_a_product(self):
+        """It should Update a single Product"""
+        test_product = self._create_products(1)[0]
+        test_product.name = "foo"
+        test_product.description = "fighters"
+        response = self.client.put(f"{BASE_URL}/{test_product.id}", json=test_product.serialize())
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        updated_product = response.get_json()
+        self.assertEqual(updated_product["id"], test_product.id)
+        self.assertEqual(updated_product["name"], test_product.name)
+        self.assertEqual(updated_product["description"], test_product.description)
+        self.assertEqual(Decimal(updated_product["price"]), test_product.price)
+        self.assertEqual(updated_product["available"], test_product.available)
+        self.assertEqual(updated_product["category"], test_product.category.name)
+
+    def test_update_non_existing_product(self):
+        """Update non-existing Product should return 400"""
+        test_product = self._create_products(1)[0]
+        test_product.name = "foo"
+        test_product.description = "fighters"
+        response = self.client.put(f"{BASE_URL}/0", json=test_product.serialize())
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    '''
+    # This Scenario works like this:
+    #    product_serialized["price"] = "foo" fails in deserialization
+    #    product_serialized["category"] = "fighters" succeeds
+    # The test might not be appropriate, or it requires another error handling in routes.update
+    def test_update_product_with_wrong_type(self):
+        """Update Product with wrong data type should return 400"""
+        test_product = self._create_products(1)[0]        
+        product_serialized = test_product.serialize()
+        #product_serialized["price"] = "foo"
+        product_serialized["category"] = "fighters"
+        response = self.client.put(f"{BASE_URL}/{test_product.id}", json=product_serialized)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    '''
+
+    def test_update_product_with_no_name(self):
+        """It should not Update a Product without a name"""
+        product = self._create_products()[0]
+        update_product = product.serialize()
+        del update_product["name"]
+        logging.debug("Product no name: %s", update_product)
+        response = self.client.put(f"{BASE_URL}/{product.id}", json=update_product)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    
+    def test_update_product_no_content_type(self):
+        """It should not Update a Product with no Content-Type"""
+        response = self.client.put(f"{BASE_URL}/1", data="bad data")
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_update_product_wrong_content_type(self):
+        """It should not Update a Product with wrong Content-Type"""
+        response = self.client.put(f"{BASE_URL}/1", data={}, content_type="plain/text")
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
 
     ######################################################################
     # Utility functions
