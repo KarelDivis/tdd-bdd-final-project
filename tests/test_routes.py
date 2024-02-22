@@ -210,7 +210,7 @@ class TestProductRoutes(TestCase):
 
     '''
     # This Scenario works like this:
-    #    product_serialized["price"] = "foo" fails in deserialization
+    #    product_serialized["price"] = "foo" fails in deserialization (redundant)
     #    product_serialized["category"] = "fighters" succeeds
     # The test might not be appropriate, or it requires another error handling in routes.update
     def test_update_product_with_wrong_type(self):
