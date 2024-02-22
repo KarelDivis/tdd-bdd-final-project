@@ -98,9 +98,45 @@ def create_products():
 # L I S T   A L L   P R O D U C T S
 ######################################################################
 
-#
-# PLACE YOUR CODE TO LIST ALL PRODUCTS HERE
-#
+@app.route("/products", methods=["GET"])
+def list_all_products():
+    """
+    Retrieve all Products
+
+    This endpoint will return all Products
+    """
+    name  = request.args.get('name', None)
+    category  = request.args.get('category', None)
+    availability = request.args.get('availability', None)
+
+    bar = request.args.to_dict()
+
+    app.logger.critical(f"Parameters Name: {name}, Category: {category}, Availability: {availability}")
+    app.logger.critical(f"All Parameters: {bar}")
+
+    if name and category or name and availability or category and availability:
+        abort(status.HTTP_400_BAD_REQUEST, f"List Product by multiple parameters is not supported.")
+
+    if name:
+        app.logger.info("Request to Retrieve Products by Name")
+        products = Product.find_by_name(name)
+    elif category:
+        app.logger.info("Request to Retrieve Products by Category")
+        products = Product.find_by_category(category)
+    elif availability:
+        app.logger.info("Request to Retrieve Products by Availability")
+        products = Product.find_by_availability(availability)
+    else:
+        app.logger.info("Request to Retrieve all Products")
+        products = Product.all()
+    
+    results = []
+    for product in products:
+        results.append(product.serialize())
+    app.logger.info("Products Retrieval finished")
+
+    return results, status.HTTP_200_OK
+
 
 ######################################################################
 # R E A D   A   P R O D U C T
@@ -143,7 +179,7 @@ def put_products(product_id):
     product.deserialize(data)
     product.update()
     
-    app.logger.info("Product with wid [%s] updated!", product.id)
+    app.logger.info("Product with id [%s] updated!", product.id)
     
     return product.serialize(), status.HTTP_200_OK
 
@@ -152,6 +188,19 @@ def put_products(product_id):
 ######################################################################
 
 
-#
-# PLACE YOUR CODE TO DELETE A PRODUCT HERE
-#
+@app.route("/products/<int:product_id>", methods=["DELETE"])
+def delete_product(product_id):
+    """
+    Delete a Product
+
+    This endpoint will delete a Product by it's ID
+    """
+    app.logger.info("Request to Update a Product by it's ID [%s]", product_id) 
+    product = Product.find(product_id)
+    if not product:
+        abort(status.HTTP_400_BAD_REQUEST, f"Product with ID {product_id} was not found.")    
+    product.delete()
+
+    app.logger.info("Product with id [%s] deleted!", product.id)
+
+    return "", status.HTTP_204_NO_CONTENT

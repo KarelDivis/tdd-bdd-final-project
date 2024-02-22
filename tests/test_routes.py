@@ -246,9 +246,7 @@ class TestProductRoutes(TestCase):
     
     
     def test_delete_product(self):
-        """It should Delete a Product by ID"""
-        products = Product.all()
-        self.assertFalse(products)
+        """It should Delete a Product by ID"""        
         products = self._create_products(2)
         product_delete = products[0]
         response = self.client.delete(f"{BASE_URL}/{product_delete.id}")
@@ -256,11 +254,56 @@ class TestProductRoutes(TestCase):
         self.assertEqual(response.text, "")
         remaining_id = products[1].id
         products = Product.all()
-        self.assertEqual(products.count(), 1)
+        self.assertEqual(len(products), 1)
         self.assertEqual(products[0].id, remaining_id)
+
+    def test_delete_non_existing_product(self):
+        """Delete non-existing Product should return 400"""        
+        response = self.client.delete(f"{BASE_URL}/0")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     
 
-    # def test_list_all_products(self):
+    def test_list_all_products(self):
+        """It should List all Products"""
+        expect_count = 10
+        expect_products = self._create_products(expect_count)        
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        actual_products = response.get_json()
+        self.assertEqual(len(actual_products), expect_count)
+        counter = 0
+        for actual in actual_products:
+            expected = next(product for product in expect_products if product.id == actual["id"])
+            self.assertEqual(actual["name"], expected.name)
+            self.assertEqual(actual["description"], expected.description)
+            self.assertEqual(Decimal(actual["price"]), expected.price)
+            self.assertEqual(actual["available"], expected.available)
+            self.assertEqual(actual["category"], expected.category.name)
+
+    def test_list_by_name(self):
+        """It should List Products by name"""
+        products = self._create_products(10)
+        # change name of 3 products to same value
+        for index in [2,5,7]:
+            product = products[index]
+            product.name = "foofoo"            
+            response = self.client.put(f"{BASE_URL}/{product.id}", json=product.serialize())
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.get_json()["name"], "foofoo")
+        # lists product by name
+        response = self.client.get(f"{BASE_URL}?name=foofoo")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        actual_products = response.get_json()
+        self.assertEqual(len(actual_products), 3)
+        for actual in actual_products:
+            expected = next(product for product in products if product.id == actual["id"])
+            self.assertEqual(actual["name"], expected.name)
+            self.assertEqual(actual["description"], expected.description)
+            self.assertEqual(Decimal(actual["price"]), expected.price)
+            self.assertEqual(actual["available"], expected.available)
+            self.assertEqual(actual["category"], expected.category.name)
+
+
 
     ######################################################################
     # Utility functions
