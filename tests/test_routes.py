@@ -31,7 +31,7 @@ from decimal import Decimal
 from unittest import TestCase
 from service import app
 from service.common import status
-from service.models import db, init_db, Product
+from service.models import db, init_db, Product, DataValidationError
 from tests.factories import ProductFactory
 
 # Disable all but critical errors during normal test run
@@ -207,7 +207,7 @@ class TestProductRoutes(TestCase):
         test_product.description = "fighters"
         response = self.client.put(f"{BASE_URL}/0", json=test_product.serialize())
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
+    
     '''
     # This Scenario works like this:
     #    product_serialized["price"] = "foo" fails in deserialization (redundant)
@@ -217,10 +217,12 @@ class TestProductRoutes(TestCase):
         """Update Product with wrong data type should return 400"""
         test_product = self._create_products(1)[0]        
         product_serialized = test_product.serialize()
-        #product_serialized["price"] = "foo"
+        product_serialized["price"] = "foo"
         product_serialized["category"] = "fighters"
-        response = self.client.put(f"{BASE_URL}/{test_product.id}", json=product_serialized)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        with self.assertRaises(DataValidationError) as err:
+            response = self.client.put(f"{BASE_URL}/{test_product.id}", json=product_serialized)
+        
+        # self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     '''
 
     def test_update_product_with_no_name(self):
@@ -241,7 +243,24 @@ class TestProductRoutes(TestCase):
         """It should not Update a Product with wrong Content-Type"""
         response = self.client.put(f"{BASE_URL}/1", data={}, content_type="plain/text")
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+    
+    
+    def test_delete_product(self):
+        """It should Delete a Product by ID"""
+        products = Product.all()
+        self.assertFalse(products)
+        products = self._create_products(2)
+        product_delete = products[0]
+        response = self.client.delete(f"{BASE_URL}/{product_delete.id}")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.text, "")
+        remaining_id = products[1].id
+        products = Product.all()
+        self.assertEqual(products.count(), 1)
+        self.assertEqual(products[0].id, remaining_id)
+    
 
+    # def test_list_all_products(self):
 
     ######################################################################
     # Utility functions
