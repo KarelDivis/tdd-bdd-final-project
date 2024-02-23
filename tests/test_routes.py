@@ -313,7 +313,7 @@ class TestProductRoutes(TestCase):
         available_count = len(available_products)
         logging.debug("Found [%d] available Products", available_count)
 
-        response = self.client.get(BASE_URL, query_string="availability=true")
+        response = self.client.get(BASE_URL, query_string="available=true")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         actual_products = response.get_json()
         self.assertEqual(len(actual_products), available_count)
@@ -325,19 +325,6 @@ class TestProductRoutes(TestCase):
             self.assertEqual(actual["available"], expected.available)
             self.assertEqual(actual["category"], expected.category.name)
 
-    '''
-    def test_product_list_by_multiple_parameters_is_canceled(self):
-        """It should NOT try List Products by multiple parameters"""
-        query_parms = {"name": "foo", "category": "baz"}
-        response = self.client.get(BASE_URL, query_string=query_parms)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        query_parms = {"name": "foo", "availability": "true"}
-        response = self.client.get(BASE_URL, query_string=query_parms)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        query_parms = {"category": "foo", "availability": "true"}
-        response = self.client.get(BASE_URL, query_string=query_parms)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-    '''
     ######################################################################
     # Utility functions
     ######################################################################

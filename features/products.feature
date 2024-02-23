@@ -39,7 +39,7 @@ Scenario: Create a Product
     And I should see "Tools" in the "Category" dropdown
     And I should see "34.95" in the "Price" field
 
-Scenario: Read a product
+Scenario: Read a Product
     When I visit the "Home Page"
     And I set the "Name" to "Hat"
     And I press the "Search" button
@@ -55,7 +55,7 @@ Scenario: Read a product
     And I should see "Cloths" in the "Category" dropdown
     And I should see "59.95" in the "Price" field
 
-Scenario: Update a product
+Scenario: Update a Product
     When I visit the "Home Page"
     And I set the "Name" to "Hat"
     And I press the "Search" button
@@ -77,7 +77,7 @@ Scenario: Update a product
     And I should see "Fedora" in the results
     And I should not see "Hat" in the results  
 
-Scenario: Delete a product
+Scenario: Delete a Product
     When I visit the "Home Page"
     And I set the "Name" to "Hat"
     And I press the "Search" button
@@ -93,7 +93,7 @@ Scenario: Delete a product
     Then I should see the message "Success"
     And I should not see "Hat" in the results
 
-Scenario: List all products
+Scenario: List all Products
     When I visit the "Home Page"
     And I press the "Clear" button
     And I press the "Search" button
@@ -103,7 +103,7 @@ Scenario: List all products
     And I should see "Big Mac" in the results
     And I should see "Sheets" in the results
 
-Scenario: Search by category
+Scenario: List by Category
     When I visit the "Home Page"
     And I press the "Clear" button
     And I select "Cloths" in the "Category" dropdown
@@ -114,7 +114,7 @@ Scenario: Search by category
     And I should not see "Big Mac" in the results
     And I should not see "Sheets" in the results
 
-Scenario: Search by availability
+Scenario: List by Available
     When I visit the "Home Page"
     And I press the "Clear" button
     And I select "True" in the "Available" dropdown
@@ -125,7 +125,7 @@ Scenario: Search by availability
     And I should see "Sheets" in the results
     And I should not see "Shoes" in the results
 
-Scenario: Search by name
+Scenario: List by Name
     When I visit the "Home Page"
     And I press the "Clear" button
     And I set the "Name" to "Shoes"

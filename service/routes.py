@@ -107,13 +107,7 @@ def list_products():
     products = []
     name = request.args.get('name', None)
     category = request.args.get('category', None)
-    availability = request.args.get('availability', None)
-
-    '''
-    # This appeared logic in unit testing, but it might cause problems in integration
-    if len(list(filter(None, [name, category, availability]))) > 1:
-        abort(status.HTTP_400_BAD_REQUEST, "List Product by multiple parameters is not supported.")
-    '''
+    available = request.args.get('available', None)
 
     if name:
         app.logger.info("Request to Retrieve Products by Name: %s", name)
@@ -122,9 +116,9 @@ def list_products():
         app.logger.info("Request to Retrieve Products by Category: %s", category)
         category_value = getattr(Category, category.upper())
         products = Product.find_by_category(category_value)
-    elif availability:
-        app.logger.info("Request to Retrieve Products by Availability: %s", availability)
-        available_value = availability.lower() in ["true", "yes", "1"]
+    elif available:
+        app.logger.info("Request to Retrieve Products by Availability: %s", available)
+        available_value = available.lower() in ["true", "yes", "1"]
         products = Product.find_by_availability(available_value)
     else:
         app.logger.info("Request to Retrieve all Products")
