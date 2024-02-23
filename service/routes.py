@@ -20,7 +20,7 @@ Product Store Service with UI
 """
 from flask import jsonify, request, abort
 from flask import url_for  # noqa: F401 pylint: disable=unused-import
-from service.models import Product
+from service.models import Product, Category
 from service.common import status  # HTTP Status Codes
 from . import app
 
@@ -90,7 +90,6 @@ def create_products():
     # Uncomment this line of code once you implement READ A PRODUCT
     #
     location_url = url_for("get_products", product_id=product.id, _external=True)
-    #location_url = "/"  # delete once READ is implemented
     return jsonify(message), status.HTTP_201_CREATED, {"Location": location_url}
 
 
@@ -99,41 +98,36 @@ def create_products():
 ######################################################################
 
 @app.route("/products", methods=["GET"])
-def list_all_products():
+def list_products():
     """
-    Retrieve all Products
+    Retrieve a list of Products
 
-    This endpoint will return all Products
+    This endpoint will return list of Products
     """
-    name  = request.args.get('name', None)
-    category  = request.args.get('category', None)
+    name = request.args.get('name', None)
+    category = request.args.get('category', None)
     availability = request.args.get('availability', None)
 
-    bar = request.args.to_dict()
-
-    app.logger.critical(f"Parameters Name: {name}, Category: {category}, Availability: {availability}")
-    app.logger.critical(f"All Parameters: {bar}")
-
-    if name and category or name and availability or category and availability:
-        abort(status.HTTP_400_BAD_REQUEST, f"List Product by multiple parameters is not supported.")
+    if len(list(filter(None, [name, category, availability]))) > 1:
+        abort(status.HTTP_400_BAD_REQUEST, "List Product by multiple parameters is not supported.")
 
     if name:
-        app.logger.info("Request to Retrieve Products by Name")
+        app.logger.info("Request to Retrieve Products by Name: %s", name)
         products = Product.find_by_name(name)
     elif category:
-        app.logger.info("Request to Retrieve Products by Category")
-        products = Product.find_by_category(category)
+        app.logger.info("Request to Retrieve Products by Category: %s", category)
+        category_value = getattr(Category, category.upper())
+        products = Product.find_by_category(category_value)
     elif availability:
-        app.logger.info("Request to Retrieve Products by Availability")
-        products = Product.find_by_availability(availability)
+        app.logger.info("Request to Retrieve Products by Availability: %s", availability)
+        available_value = availability.lower() in ["true", "yes", "1"]
+        products = Product.find_by_availability(available_value)
     else:
         app.logger.info("Request to Retrieve all Products")
         products = Product.all()
-    
-    results = []
-    for product in products:
-        results.append(product.serialize())
-    app.logger.info("Products Retrieval finished")
+
+    results = [product.serialize() for product in products]
+    app.logger.info("[%s] Products Retrieval finished", len(results))
 
     return results, status.HTTP_200_OK
 
@@ -150,13 +144,14 @@ def get_products(product_id):
     This endpoint will return a Product by it's ID
     """
     app.logger.info("Request to Retrieve a Product by it's ID [%s]", product_id)
-    
+
     product = Product.find(product_id)
     if not product:
         abort(status.HTTP_404_NOT_FOUND, f"Product with ID {product_id} was not found.")
-    
+
     app.logger.info("Returning product: %s", product.name)
     return product.serialize(), status.HTTP_200_OK
+
 
 ######################################################################
 # U P D A T E   A   P R O D U C T
@@ -169,24 +164,25 @@ def put_products(product_id):
 
     This endpoint will update a Product by it's ID
     """
-    app.logger.info("Request to Update a Product by it's ID [%s]", product_id)    
+    app.logger.info("Request to Update a Product by it's ID [%s]", product_id)
     check_content_type("application/json")
 
-    data = request.get_json()
-    app.logger.info("Processing: %s", data)
-    product = Product()
+    product = Product.find(product_id)
+    if not product:
+        abort(status.HTTP_404_NOT_FOUND, f"Product with id '{product_id}' was not found.")
+
+    product.deserialize(request.get_json())
     product.id = product_id
-    product.deserialize(data)
     product.update()
-    
+
     app.logger.info("Product with id [%s] updated!", product.id)
-    
+
     return product.serialize(), status.HTTP_200_OK
+
 
 ######################################################################
 # D E L E T E   A   P R O D U C T
 ######################################################################
-
 
 @app.route("/products/<int:product_id>", methods=["DELETE"])
 def delete_product(product_id):
@@ -195,10 +191,10 @@ def delete_product(product_id):
 
     This endpoint will delete a Product by it's ID
     """
-    app.logger.info("Request to Update a Product by it's ID [%s]", product_id) 
+    app.logger.info("Request to Update a Product by it's ID [%s]", product_id)
     product = Product.find(product_id)
     if not product:
-        abort(status.HTTP_400_BAD_REQUEST, f"Product with ID {product_id} was not found.")    
+        abort(status.HTTP_400_BAD_REQUEST, f"Product with ID {product_id} was not found.")
     product.delete()
 
     app.logger.info("Product with id [%s] deleted!", product.id)

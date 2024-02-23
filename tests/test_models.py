@@ -207,10 +207,8 @@ class TestProductModel(unittest.TestCase):
         product.id = None
         product.description = "My changed product description"
         app.logger.debug(f"Product description was changed to: {product.description}")
-        # self.assertRaises(DataValidationError, product.update())
-        with self.assertRaises(DataValidationError) as err:
+        with self.assertRaises(DataValidationError):
             product.update()
-        # self.assertTrue("Update called with empty ID field" in err.exception)
 
     def test_serialize(self):
         """It should serialize product"""
@@ -276,9 +274,8 @@ class TestProductModel(unittest.TestCase):
             "category": "UNKNOWN"
         }
         product = ProductFactory()
-        with self.assertRaises(DataValidationError) as err:
+        with self.assertRaises(DataValidationError):
             product.deserialize(product_dict)
-        # self.assertTrue("Invalid type for boolean [available]: " in err.exception)
 
     def test_deserialization_fails_on_category(self):
         """Deserialization should fail when Category provided non-enum"""
@@ -290,9 +287,8 @@ class TestProductModel(unittest.TestCase):
             "category": "MUHAHA"
         }
         product = ProductFactory()
-        with self.assertRaises(DataValidationError) as err:
+        with self.assertRaises(DataValidationError):
             product.deserialize(product_dict)
-        # self.assertTrue("Invalid attribute: " in err.exception)
 
     def test_deserialization_fails_on_dict_incomplete(self):
         """Deserialization should fail when deserialized Dictionary mising data"""
@@ -303,14 +299,12 @@ class TestProductModel(unittest.TestCase):
             "available": True
         }
         product = ProductFactory()
-        with self.assertRaises(DataValidationError) as err:
+        with self.assertRaises(DataValidationError):
             product.deserialize(product_dict)
-        # self.assertTrue("Invalid product: missing " in err.exception)
 
     def test_deserialization_fails_on_non_dictionary(self):
         """Deserialization should fail when input is not a dictionary"""
         product_dict = "SomeName"
         product = ProductFactory()
-        with self.assertRaises(DataValidationError) as err:
+        with self.assertRaises(DataValidationError):
             product.deserialize(product_dict)
-        # self.assertTrue("Invalid product: body of request contained bad or no data " in err.exception)
