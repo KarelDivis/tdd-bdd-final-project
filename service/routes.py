@@ -104,12 +104,16 @@ def list_products():
 
     This endpoint will return list of Products
     """
+    products = []
     name = request.args.get('name', None)
     category = request.args.get('category', None)
     availability = request.args.get('availability', None)
 
+    '''
+    # This appeared logic in unit testing, but it might cause problems in integration
     if len(list(filter(None, [name, category, availability]))) > 1:
         abort(status.HTTP_400_BAD_REQUEST, "List Product by multiple parameters is not supported.")
+    '''
 
     if name:
         app.logger.info("Request to Retrieve Products by Name: %s", name)
@@ -147,7 +151,7 @@ def get_products(product_id):
 
     product = Product.find(product_id)
     if not product:
-        abort(status.HTTP_404_NOT_FOUND, f"Product with ID {product_id} was not found.")
+        abort(status.HTTP_404_NOT_FOUND, f"Product with ID '{product_id}' was not found.")
 
     app.logger.info("Returning product: %s", product.name)
     return product.serialize(), status.HTTP_200_OK

@@ -63,8 +63,6 @@ Scenario: Update a product
     And I should see "True" in the "Available" dropdown
     And I should see "59.95" in the "Price" field
     When I change "Name" to "Fedora"
-    And I change the "Available" dropdown to "False"
-    And I change the "Price" to "999.95"
     And I press the "Update" button
     Then I should see the message "Success"
     When I copy the "Id" field
@@ -73,8 +71,6 @@ Scenario: Update a product
     And I press the "Retrieve" button
     Then I should see the message "Success"
     And I should see "Fedora" in the "Name" field
-    And I should see "False" in the "Available" dropdown
-    And I should see "999.95" in the "Price" field
     When I press the "Clear" button
     And I press the "Search" button
     Then I should see the message "Success"

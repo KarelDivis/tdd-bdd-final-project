@@ -325,6 +325,7 @@ class TestProductRoutes(TestCase):
             self.assertEqual(actual["available"], expected.available)
             self.assertEqual(actual["category"], expected.category.name)
 
+    '''
     def test_product_list_by_multiple_parameters_is_canceled(self):
         """It should NOT try List Products by multiple parameters"""
         query_parms = {"name": "foo", "category": "baz"}
@@ -336,7 +337,7 @@ class TestProductRoutes(TestCase):
         query_parms = {"category": "foo", "availability": "true"}
         response = self.client.get(BASE_URL, query_string=query_parms)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
+    '''
     ######################################################################
     # Utility functions
     ######################################################################
